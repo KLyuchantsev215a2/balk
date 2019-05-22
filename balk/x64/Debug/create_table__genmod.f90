@@ -1,10 +1,10 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue May 21 14:17:10 2019
+        !COMPILER-GENERATED INTERFACE MODULE: Wed May 22 13:45:39 2019
         MODULE CREATE_TABLE__genmod
           INTERFACE 
             SUBROUTINE CREATE_TABLE(X,H,TABLE,N,DH)
               INTEGER(KIND=4) :: N
               REAL(KIND=8) :: X(2,N)
-              REAL(KIND=8) :: H(N)
+              REAL(KIND=8) :: H
               INTEGER(KIND=4) :: TABLE(N,120)
               REAL(KIND=8) :: DH
             END SUBROUTINE CREATE_TABLE

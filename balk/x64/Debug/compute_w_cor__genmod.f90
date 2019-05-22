@@ -1,12 +1,12 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue May 21 14:17:09 2019
+        !COMPILER-GENERATED INTERFACE MODULE: Wed May 22 13:46:15 2019
         MODULE COMPUTE_W_COR__genmod
           INTERFACE 
             SUBROUTINE COMPUTE_W_COR(X,XPER,H,N,VOL,W,TABLE)
               INTEGER(KIND=4) :: N
               REAL(KIND=8) :: X(2,N)
               REAL(KIND=8) :: XPER(2,N)
-              REAL(KIND=8) :: H(N)
-              REAL(KIND=8) :: VOL(N)
+              REAL(KIND=8) :: H
+              REAL(KIND=8) :: VOL
               REAL(KIND=8) :: W(N,N)
               INTEGER(KIND=4) :: TABLE(N,120)
             END SUBROUTINE COMPUTE_W_COR

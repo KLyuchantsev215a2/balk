@@ -1,7 +1,7 @@
 subroutine Create_Table(x,h,table,N,dh)
     integer :: N,i,j
     real*8 :: x(2,N)
-    real*8:: h(N)
+    real*8:: h
     real*8:: dh
     
     integer :: table(N,120)
@@ -20,7 +20,7 @@ subroutine Create_Table(x,h,table,N,dh)
         
         xj=x(1:2,j)
         
-        neighbour=Compute_W(xi,xj,h(i)+2*dh,h(j)+2*dh) 
+        neighbour=Compute_W(xi,xj,h+2*dh,h+2*dh) 
            
             if (neighbour>0) then
                !  if((abs((x(1,i)>=0.7))+abs((x(1,j)>=0.7))+abs((x(2,i)*x(2,j)>0))+abs(i==j))/=0) then

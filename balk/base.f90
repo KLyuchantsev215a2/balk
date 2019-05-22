@@ -1,4 +1,5 @@
-﻿program base
+﻿#pragma comment(linker, "/STACK:10000000000")
+    program base
     integer N,i,count_hole,count_section,k1,k2,a!the number of particles that sample the environment
     integer step!counter for time steps
     integer sqn,fr,coutfr,flag
@@ -23,15 +24,16 @@
     real*8, allocatable :: Wper3(:,:)!tmp
     real*8, allocatable :: Wper4(:,:)!tmp
     real*8, allocatable :: nabla_W(:,:,:)
-    real*8, allocatable :: nabla_W_0(:,:,:)
+    real*8, allocatable :: nabla_W_0_1(:,:)
+    real*8, allocatable :: nabla_W_0_2(:,:)
     
     real*8, allocatable :: Couchy(:,:,:)
     real*8, allocatable :: PK1(:,:,:)
     real*8, allocatable :: F(:,:,:)
     real*8, allocatable :: Ci(:,:,:)
     real*8, allocatable :: Ci_new(:,:,:)
-    real*8, allocatable :: vol(:)
-    real*8, allocatable :: h(:)
+    real*8:: vol
+    real*8 :: h
     
     real*8, allocatable :: acc(:,:)
     real*8, allocatable :: x_0(:,:),x_n_1(:,:),x_n_2(:,:),x_n_1_2(:,:),x_n_3_2(:,:)
@@ -83,7 +85,7 @@
       
      end interface
     
-    open (unit=1, file="300.txt")
+    open (unit=1, file="19200.txt")
     open (unit=2, file="output_x.txt", action='write')
     open (unit=3, file="output_C.txt", action='write')
     
@@ -109,25 +111,21 @@
     
     dt=0.00001d0!CFL*h/(cs_0)
     fr=int(T/dt/50)
-
-    allocate(vol(N))
-    allocate(h(N))
     allocate(x(2,N))
     allocate(x_init(2,N))
-    allocate(xplot(2,N,200))
+    !allocate(xplot(2,N,200))
     allocate(v(2,N))
     allocate(table(N,120))
     
     allocate(acc(2,N))
     allocate(x_0(2,N))
     allocate(v_0_0(2,N))
-    allocate(W(N,N))
     
     allocate(Wper1(N,N))
     allocate(Wper2(N,N))
     allocate(Wper3(N,N))
-    allocate(Wper4(N,N))
-    allocate(nabla_W_0(2,N,N))
+    allocate(nabla_W_0_1(N,N))
+    allocate(nabla_W_0_2(N,N))
     
     allocate(F(2,2,N))
     allocate(Ci(2,2,N))
@@ -153,7 +151,7 @@
     h=1.0*sqrt(m/rho_0)
     vol=m/rho_0
        
-    max_h=h(1)
+    max_h=h
    
     
    v=0
@@ -166,11 +164,11 @@
     do i=1,N
          
 
-    if(x(2,i)>=3.0d0-2*h(1)) then
+    if(x(2,i)>=3.0d0-2*h) then
             count_hole=count_hole+1
         end if
         
-        if (x(2,i)<=0.0d0+2*h(1)) then
+        if (x(2,i)<=0.0d0+2*h) then
                 count_section=count_section+1
         end if
         
@@ -183,13 +181,13 @@
     k2=1
     do i=1,N
         
-     if(x(2,i)>=3.0d0-2*h(1)) then  
+     if(x(2,i)>=3.0d0-2*h) then  
                 index_hole(k1)=i
                 k1=k1+1
         end if
         
         
-        if (x(2,i)<=0.0d0+2*h(1)) then
+        if (x(2,i)<=0.0d0+2*h) then
                 index_section(k2)=i                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
                 k2=k2+1
         end if
@@ -199,8 +197,8 @@
     
    
    
-   call Compute_nabla_W(x,h,vol,N,W,Wper1,Wper2,Wper3,Wper4,nabla_W_0,dh,table)!tmp
-   call Compute_F(vol,x,x_init,nabla_W_0,N,F,table)
+   call Compute_nabla_W(x,h,vol,N,W,Wper1,Wper2,Wper3,nabla_W_0_1,nabla_W_0_2,dh,table)!tmp
+   call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
    Ci=F
    call OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
    Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
@@ -209,7 +207,7 @@
     do step=1,int(T/dt)
         x_0=x
         v_0_0=v
-        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x_0,x_init,v,nabla_W_0,nabla_W,W,Wper1,Wper2,Wper3,Wper4,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress)
+        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x_0,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress)
         v=v+dt*acc
         x=x+dt*v
         !call plot_init(x,N,count_hole,count_section,index_section,index_hole)
@@ -235,7 +233,7 @@
         
     
        
-        call Compute_F(vol,x,x_init,nabla_W_0,N,F,table) 
+        call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table) 
         call  OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
         Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
         
@@ -245,9 +243,9 @@
        
         if(step-int(step/fr)*fr==0) then
              write (*,1112) Couchy(1,1,index_section(1)),time_calculated
-            xplot(1:2,1:N,coutfr)=x
-            coutfr=coutfr+1
-        end if
+       !     xplot(1:2,1:N,coutfr)=x
+       !     coutfr=coutfr+1
+       end if
         
        Force=0.0d0
        
@@ -263,11 +261,8 @@
     
     pause
     
-    call  plot(xplot,N,50)
+    !call  plot(xplot,N,50)
     
-    
-    deallocate(vol)
-    deallocate(h)
     deallocate(x)
     deallocate(x_init)
     deallocate(xplot)
@@ -277,14 +272,12 @@
     deallocate(acc)
     deallocate(x_0)
     deallocate(v_0_0)
-    deallocate(W)
     
     deallocate(Wper1)
     deallocate(Wper2)
     deallocate(Wper3)
-    deallocate(Wper4)
-    deallocate(nabla_W_0)
-    
+    deallocate(nabla_W_0_1)
+    deallocate(nabla_W_0_2)
     deallocate(F)
     deallocate(Ci)
     deallocate(Ci_new)
@@ -296,7 +289,7 @@
     !1110 format (1f22.0,1f23.0)
  !   1111 format (3f10.6)
  !   1112 format (4f10.6)
- 1100 format (7f10.6,1i3)
+ 1100 format (7f10.6,1i5)
  1113 format ("Density "1f12.6,/,"Time "1f10.6,/,"Poisson's ratio " 1f10.6,/,"Shear modulus " 1f15.6,/,"Side of a square " 1f10.6,/,"For finite difference " 1f10.6,/,"CFL " 1f10.6,/,"Particle count " 1i5)
  1110 format (1i12,1f24.0,1f21.0)
  1111 format (3f10.6)
