@@ -85,7 +85,7 @@
       
      end interface
     
-    open (unit=1, file="19200.txt")
+    open (unit=1, file="23232.txt")
     open (unit=2, file="output_x.txt", action='write')
     open (unit=3, file="output_C.txt", action='write')
     
@@ -122,16 +122,10 @@
     allocate(v_0_0(2,N))
     
     allocate(Wper1(N,N))
-    allocate(Wper2(N,N))
-    allocate(Wper3(N,N))
     allocate(nabla_W_0_1(N,N))
     allocate(nabla_W_0_2(N,N))
     
-    allocate(F(2,2,N))
-    allocate(Ci(2,2,N))
-    allocate(Ci_new(3,3,N))
-    allocate(Couchy(2,2,N))
-    allocate(PK1(2,2,N))
+   
    
     !do i=1,1152
     !     h(i)=0.00683066512
@@ -197,13 +191,25 @@
     
    
    
-   call Compute_nabla_W(x,h,vol,N,W,Wper1,Wper2,Wper3,nabla_W_0_1,nabla_W_0_2,dh,table)!tmp
+   call Compute_nabla_W(x,h,vol,N,Wper1,nabla_W_0_1,nabla_W_0_2,dh,table)!tmp
+   
+   deallocate(Wper1)
+   
+    allocate(F(2,2,N))
+    allocate(Ci(2,2,N))
+    allocate(Ci_new(3,3,N))
+    allocate(Couchy(2,2,N))
+    allocate(PK1(2,2,N))
+   
+   
+   
+   
    call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
    Ci=F
    call OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
    Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
    
-    call plot_init(x,N,count_hole,count_section,index_section,index_hole)
+   ! call plot_init(x,N,count_hole,count_section,index_section,index_hole)
     do step=1,int(T/dt)
         x_0=x
         v_0_0=v
@@ -273,9 +279,8 @@
     deallocate(x_0)
     deallocate(v_0_0)
     
-    deallocate(Wper1)
-    deallocate(Wper2)
-    deallocate(Wper3)
+    
+
     deallocate(nabla_W_0_1)
     deallocate(nabla_W_0_2)
     deallocate(F)
