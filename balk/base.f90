@@ -1,11 +1,10 @@
-﻿#pragma comment(linker, "/STACK:10000000000")
-    program base
+﻿    program base
     integer N,i,count_hole,count_section,k1,k2,a!the number of particles that sample the environment
     integer step!counter for time steps
     integer sqn,fr,coutfr,flag
     real*8 :: rho_0, T, l,CFL!density, total calculation time ,the size of the side of the square, Courant number
-    real*8 :: S,m!body area, mass of a single particle , smoothing radius
-    real*8 :: nu,mu,cs,E,k,eta,damping,YieldStress !material constants
+    real*8 :: Area,m!body area, mass of a single particle , smoothing radius
+    real*8 :: nu,mu,cs,E,k,eta,damping,YieldStress,gamma,beta !material constants
     real*8 :: dh,max_h!indent for calculating the derived kernel through finite differences
     real*8 :: dt,time_calculated!time step, time during calculation
     real*8 :: pi
@@ -17,6 +16,7 @@
     real*8, allocatable :: x_init(:,:)
     integer, allocatable :: table(:,:)
     real*8, allocatable :: v(:,:)
+     real*8, allocatable :: s(:)
    
     real*8, allocatable :: W(:,:)
     real*8, allocatable :: Wper1(:,:)
@@ -85,7 +85,7 @@
       
      end interface
     
-    open (unit=1, file="23232.txt")
+    open (unit=1, file="1200.txt")
     open (unit=2, file="output_x.txt", action='write')
     open (unit=3, file="output_C.txt", action='write')
     
@@ -98,11 +98,13 @@
     pi=3.14159265359
     
     coutfr=1
-    S=3.0d0
-    m=rho_0*S/N
+    Area=3.0d0
+    m=rho_0*Area/N
     
-    k=136000.0d0
-    damping=800.0d0
+    k=175000.0d0
+    gamma=3000.0d0
+    beta=10.0d0
+    damping=10.0d0
     eta=1.0
     YieldStress=335.0d0
     E=9.0*k*mu/(3.0*k+mu)
@@ -113,13 +115,14 @@
     fr=int(T/dt/50)
     allocate(x(2,N))
     allocate(x_init(2,N))
-    !allocate(xplot(2,N,200))
+    allocate(xplot(2,N,200))
     allocate(v(2,N))
     allocate(table(N,120))
     
     allocate(acc(2,N))
     allocate(x_0(2,N))
     allocate(v_0_0(2,N))
+    allocate(s(N))
     
     allocate(Wper1(N,N))
     allocate(nabla_W_0_1(N,N))
@@ -144,7 +147,8 @@
       
     h=1.0*sqrt(m/rho_0)
     vol=m/rho_0
-       
+    s=0;
+
     max_h=h
    
     
@@ -206,21 +210,21 @@
    
    call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
    Ci=F
-   call OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
+   call OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gamma,beta)
    Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
    
    ! call plot_init(x,N,count_hole,count_section,index_section,index_hole)
     do step=1,int(T/dt)
         x_0=x
         v_0_0=v
-        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x_0,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress)
+        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x_0,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,beta,s)
         v=v+dt*acc
         x=x+dt*v
         !call plot_init(x,N,count_hole,count_section,index_section,index_hole)
         time_calculated=(real(step)*dt)
         
         do k2=1,count_hole
-            x(2,index_hole(k2))=x_init(2,index_hole(k2))+0.02*0.5*(1-cos(pi*time_calculated))
+            x(2,index_hole(k2))=x_init(2,index_hole(k2))+0.05*4.0d0*(1-cos(pi*time_calculated))
         enddo  
         
        do k1=1,count_section
@@ -240,7 +244,7 @@
     
        
         call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table) 
-        call  OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
+        call  OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gamma,beta)
         Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
         
              
@@ -249,17 +253,24 @@
        
         if(step-int(step/fr)*fr==0) then
              write (*,1112) Couchy(1,1,index_section(1)),time_calculated
-       !     xplot(1:2,1:N,coutfr)=x
-       !     coutfr=coutfr+1
+            xplot(1:2,1:N,coutfr)=x
+            coutfr=coutfr+1
        end if
         
        Force=0.0d0
        
         do k1=1,count_hole 
-               Force=Force+Couchy(2,2,index_hole(k1))
+                if(x_init(2,index_hole(k1))<3.0d0) then 
+                
+                    if((x_init(1,index_hole(k1))<=0.0000001)+(x_init(1,index_hole(k1))>=0.9999)) then
+                        Couchy(2,2,index_hole(k1))=Couchy(2,2,index_hole(k1))/2.0d0
+                    endif
+                    
+                    Force=Force+Couchy(2,2,index_hole(k1))
+                endif
         enddo
         
-        write (2,1112) Force/count_hole,x(2,index_hole(1))-x_init(2,index_hole(1))
+        write (2,1112) (Force/(count_hole-2.0d0))*2.0d0,x(2,index_hole(1))-x_init(2,index_hole(1))
       
     enddo
     
@@ -267,7 +278,7 @@
     
     pause
     
-    !call  plot(xplot,N,50)
+    call  plot(xplot,N,50)
     
     deallocate(x)
     deallocate(x_init)
@@ -294,7 +305,7 @@
     !1110 format (1f22.0,1f23.0)
  !   1111 format (3f10.6)
  !   1112 format (4f10.6)
- 1100 format (7f10.6,1i5)
+ 1100 format (7f10.6,1i4)
  1113 format ("Density "1f12.6,/,"Time "1f10.6,/,"Poisson's ratio " 1f10.6,/,"Shear modulus " 1f15.6,/,"Side of a square " 1f10.6,/,"For finite difference " 1f10.6,/,"CFL " 1f10.6,/,"Particle count " 1i5)
  1110 format (1i12,1f24.0,1f21.0)
  1111 format (3f10.6)

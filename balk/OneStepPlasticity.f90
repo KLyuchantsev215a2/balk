@@ -1,10 +1,11 @@
-subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
+subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gamma,beta)
     !input F,Ci              
     !output Ci_new,PK1
     integer:: N
     real*8 :: F(2,2,N)
     real*8 :: Couchy(2,2,N)
     real*8 :: Ci(2,2,N)
+    real*8 :: s(N)
     real*8 :: Ci_new(3,3,N)
     real*8 :: mu
     real*8 :: dt
@@ -12,6 +13,9 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
     real*8 :: k
     real*8 :: eta
     real*8 :: YieldStress
+    real*8 :: R
+    real*8 :: beta
+    real*8 :: gamma
     real*8 :: DrivingForce
     real*8 :: MandellStress(3,3)
     real*8 :: DrivingForce_tmp_dev(3,3)
@@ -32,7 +36,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
     real*8 :: Cip(3,3)
     real*8 :: invCip(3,3)
     real*8 :: multCCi(3,3)
-    
+    real*8 :: sp
     real*8 :: C_iso(3,3)
     real*8 :: dev_C_iso(3,3)
     real*8 :: Stress2PK(3,3)
@@ -67,6 +71,8 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
         
         Cip=Ci3x3;   ! C_i from the previous time step at the current point
         
+        sp=s(i);
+        
         
         call inv_matrix(C,invC)
         call inv_matrix(Cip,invCip)            ! invCip = (old C_i)^(-1)
@@ -83,16 +89,19 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
         
         DrivingForce=sqrt((DrivingForce_tmp_sqr(1,1)+DrivingForce_tmp_sqr(2,2)+DrivingForce_tmp_sqr(3,3)))                             ! DrivingForce = sqrt(trace(  (  dev(C T^tilde)  )^2  ))
         
-        li=(DrivingForce-sqrt(2.0d0/3.0d0)*YieldStress)/eta
+        R=gamma/beta*(1.0d0-exp(-beta*sp))  ! trial isotropic hardening
+        li=(DrivingForce-sqrt(2.0d0/3.0d0)*(YieldStress+R))/eta
         
         if (li<0) then
             li=0
         end if                     ! Maccauley bracket
         ! update Ci
-        if(DrivingForce==0) then
+        if(li==0) then
             Ci3x3 = Ci3x3
+            s(i)=sp
         else
         Ci3x3 = Ci3x3 + ((2.0*dt*mu*li)/DrivingForce)*C_iso
+        s(i) = sp+ sqrt(2.0d0/3.0d0)*li*dt
         end if
         
         detCi3x3=(Ci3x3(1,1)*Ci3x3(2,2)-Ci3x3(1,2)*Ci3x3(2,1))*Ci3x3(3,3)
@@ -121,10 +130,10 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
          call inv_matrix(Fp,invFp)
         
          do alpha=1,2
-            do beta=1,2
-               PK1(alpha,beta,i)=0
-                do gamma=1,3
-                   PK1(alpha,beta,i)=PK1(alpha,beta,i)+invFp(alpha,gamma)*Couchy_tmp(gamma,beta)
+            do bbeta=1,2
+               PK1(alpha,bbeta,i)=0
+                do ggamma=1,3
+                   PK1(alpha,bbeta,i)=PK1(alpha,bbeta,i)+invFp(alpha,ggamma)*Couchy_tmp(ggamma,bbeta)
                 enddo
             enddo
          enddo
@@ -132,8 +141,8 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,YieldStress)
          PK1_trans_tmp(1:2,1:2)=PK1(1:2,1:2,i)   ! this way it works better :-)
          
       do alpha=1,2
-          do beta=1,2
-               PK1(alpha,beta,i)=PK1_trans_tmp(beta,alpha)
+          do bbeta=1,2
+               PK1(alpha,bbeta,i)=PK1_trans_tmp(bbeta,alpha)
          enddo
         enddo
     

@@ -1,5 +1,5 @@
-subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_old,v_old,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,friction)
-    integer :: N,i,j,alpha,beta,k1,k2,count_hole,count_section
+subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_old,v_old,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,beta,s)
+    integer :: N,i,j,alpha,k1,k2,count_hole,count_section
     
     real*8 :: cs
     real*8 :: dh
@@ -9,9 +9,12 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
     real*8 :: k
     real*8 :: eta
     real*8 :: damping
-    real*8 :: friction
+    real*8 :: YieldStress
     real*8 :: vol
     real*8 :: h
+    real*8 :: beta
+    real*8 :: gamma
+    real*8 :: s(N)
     real*8 :: F(2,2,N)
     real*8 :: Ci(2,2,N)
     real*8 :: Ci_new(3,3,N)
@@ -32,7 +35,7 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
    ! call compute_W_cor(x,x,h,N,vol,W)
     !call Compute_nabla_W(x,h,vol,N,W,Wper1,Wper2,Wper3,Wper4,nabla_W,dh)
     call Compute_F(vol,x,x_old,nabla_W_0_1,nabla_W_0_2,N,F,table)
-    call  OneStepPlasticity(F,mu,k,eta,dt,Ci,N,Couchy,Ci_new,PK1,friction)
+    call  OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gamma,beta)
     Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
   !  call Compute_Stress_PK1(F,Couchy,PK1,mu,k,N)
 
