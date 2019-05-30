@@ -4,7 +4,7 @@
     integer sqn,fr,coutfr,flag
     real*8 :: rho_0, T, l,CFL!density, total calculation time ,the size of the side of the square, Courant number
     real*8 :: Area,m!body area, mass of a single particle , smoothing radius
-    real*8 :: nu,mu,cs,E,k,eta,damping,YieldStress,gamma,beta !material constants
+    real*8 :: nu,mu,cs,E,k,eta,damping,YieldStress,gammar,betar,etaN !material constants
     real*8 :: dh,max_h!indent for calculating the derived kernel through finite differences
     real*8 :: dt,time_calculated!time step, time during calculation
     real*8 :: pi
@@ -29,8 +29,11 @@
     
     real*8, allocatable :: Couchy(:,:,:)
     real*8, allocatable :: PK1(:,:,:)
+    real*8, allocatable :: PK1N(:,:,:)
     real*8, allocatable :: F(:,:,:)
     real*8, allocatable :: Ci(:,:,:)
+    real*8, allocatable :: C(:,:,:)
+    real*8, allocatable :: C_new(:,:,:)
     real*8, allocatable :: Ci_new(:,:,:)
     real*8:: vol
     real*8 :: h
@@ -85,7 +88,7 @@
       
      end interface
     
-    open (unit=1, file="1200.txt")
+    open (unit=1, file="75.txt")
     open (unit=2, file="output_x.txt", action='write')
     open (unit=3, file="output_C.txt", action='write')
     
@@ -102,17 +105,18 @@
     m=rho_0*Area/N
     
     k=175000.0d0
-    gamma=3000.0d0
-    beta=10.0d0
-    damping=10.0d0
+    gammar=30000.0d0
+    betar=100.0d0
+    damping=0.0d0
+    etaN=100.0d0
     eta=1.0
     YieldStress=335.0d0
     E=9.0*k*mu/(3.0*k+mu)
 
     cs=sqrt((k+4.0/3.0*mu)/rho_0)
     
-    dt=0.00001d0!CFL*h/(cs_0)
-    fr=int(T/dt/50)
+    
+    
     allocate(x(2,N))
     allocate(x_init(2,N))
     allocate(xplot(2,N,200))
@@ -145,12 +149,12 @@
         read (1, 1110) a,x(1,i),x(2,i)
     enddo
       
-    h=1.0*sqrt(m/rho_0)
+    h=1.0d0*sqrt(m/rho_0)
     vol=m/rho_0
-    s=0;
-
-    max_h=h
-   
+    s=0.0d0;
+    
+    dt=0.00001!CFL*h/(cs)
+   fr=int(T/dt/50)
     
    v=0
     
@@ -201,25 +205,33 @@
    
     allocate(F(2,2,N))
     allocate(Ci(2,2,N))
+    allocate(C(3,3,N))
+    allocate(C_new(3,3,N))
     allocate(Ci_new(3,3,N))
     allocate(Couchy(2,2,N))
     allocate(PK1(2,2,N))
-   
+    allocate(PK1N(2,2,N))
    
    
    
    call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
    Ci=F
-   call OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gamma,beta)
+   call OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar)
    Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
+
    
+   C=0
+   C(1,1,1:N)=1
+   C(2,2,1:N)=1
+   C(3,3,1:N)=1
    ! call plot_init(x,N,count_hole,count_section,index_section,index_hole)
     do step=1,int(T/dt)
         x_0=x
         v_0_0=v
-        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x_0,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,beta,s)
+        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x_0,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,s,dt,etaN,C,C_new,PK1N)
         v=v+dt*acc
         x=x+dt*v
+        
         !call plot_init(x,N,count_hole,count_section,index_section,index_hole)
         time_calculated=(real(step)*dt)
         
@@ -244,16 +256,17 @@
     
        
         call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table) 
-        call  OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gamma,beta)
+        call  OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar)
         Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
-        
+  
              
         
        
        
         if(step-int(step/fr)*fr==0) then
-             write (*,1112) Couchy(1,1,index_section(1)),time_calculated
-            xplot(1:2,1:N,coutfr)=x
+             write (*,1112) Couchy(2,2,index_section(1)),time_calculated
+    
+           xplot(1:2,1:N,coutfr)=x
             coutfr=coutfr+1
        end if
         

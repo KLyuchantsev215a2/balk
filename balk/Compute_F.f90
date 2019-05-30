@@ -1,10 +1,10 @@
-subroutine Compute_F(vol,x,x_old,nabla_W_0_1,nabla_W_0_2,N,F,table)
+subroutine Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
     
     integer :: N
     
     real*8 :: vol
     real*8 :: x(2,N)
-    real*8 :: x_old(2,N)
+    real*8 :: x_init(2,N)
     
     real*8 :: nabla_W_0_1(N,N)
     real*8 :: nabla_W_0_2(N,N)
@@ -16,8 +16,8 @@ subroutine Compute_F(vol,x,x_old,nabla_W_0_1,nabla_W_0_2,N,F,table)
             do j=1,table(i,1)
               
                     do alpha=1,2
-                        uj=x(alpha,table(i,j+1))-x_old(alpha,table(i,j+1))
-                        ui=x(alpha,i)-x_old(alpha,i)
+                        uj=x(alpha,table(i,j+1))-x_init(alpha,table(i,j+1))
+                        ui=x(alpha,i)-x_init(alpha,i)
                         F(alpha,1,i)=F(alpha,1,i)+vol*(uj-ui)*nabla_W_0_1(i,table(i,j+1))
                         F(alpha,2,i)=F(alpha,2,i)+vol*(uj-ui)*nabla_W_0_2(i,table(i,j+1))
                     enddo

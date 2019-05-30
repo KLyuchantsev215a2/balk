@@ -54,12 +54,14 @@
 		<File RelativePath=".\23232.txt"/>
 		<File RelativePath=".\300.txt"/>
 		<File RelativePath=".\32760.txt"/>
-		<File RelativePath=".\4800.txt"/></Filter>
+		<File RelativePath=".\4800.txt"/>
+		<File RelativePath=".\75.txt"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<File RelativePath=".\base.f90"/>
 		<File RelativePath=".\Compute_Acceleration.f90"/>
 		<File RelativePath=".\Compute_F.f90"/>
 		<File RelativePath=".\Compute_nabla_W.f90"/>
+		<File RelativePath=".\Compute_Newton_Fluid.f90"/>
 		<File RelativePath=".\Compute_W_cor.f90"/>
 		<File RelativePath=".\Convert_PK1_to_Cochi.f90"/>
 		<File RelativePath=".\Create_Table.f90"/>

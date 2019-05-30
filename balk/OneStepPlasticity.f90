@@ -1,4 +1,4 @@
-subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gamma,beta)
+subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar)
     !input F,Ci              
     !output Ci_new,PK1
     integer:: N
@@ -14,8 +14,8 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,
     real*8 :: eta
     real*8 :: YieldStress
     real*8 :: R
-    real*8 :: beta
-    real*8 :: gamma
+    real*8 :: betar
+    real*8 :: gammar
     real*8 :: DrivingForce
     real*8 :: MandellStress(3,3)
     real*8 :: DrivingForce_tmp_dev(3,3)
@@ -29,8 +29,8 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,
     real*8 :: invFp(3,3)
     real*8 :: trans_Fp(3,3)
     
-    real*8 ::C(3,3)
-    real*8 ::invC(3,3)
+    real*8 ::Cp(3,3)
+    real*8 ::invCp(3,3)
     real*8 ::Ci3x3(3,3)
     
     real*8 :: Cip(3,3)
@@ -49,7 +49,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,
     
     do i=1,N
         Ci3x3=0
-        C=0
+        Cp=0
         Couchy_tmp=0
         Fp=0
         
@@ -62,9 +62,9 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,
         
         call trans(Fp,trans_Fp)
           
-        call mymulty(trans_Fp,Fp,C)    ! now C = F' F
+        call mymulty(trans_Fp,Fp,Cp)    ! now C = F' F
             
-        C_iso=detFp**(-2.0/3.0)*C   ! isochoric part of current C
+        C_iso=detFp**(-2.0/3.0)*Cp   ! isochoric part of current C
 
         Ci3x3(1:2,1:2)=Ci(1:2,1:2,i)     ! take old C_i
         Ci3x3(3,3)=1.0/(Ci(1,1,i)*Ci(2,2,i)-Ci(1,2,i)*Ci(2,1,i))
@@ -74,14 +74,14 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,
         sp=s(i);
         
         
-        call inv_matrix(C,invC)
+        call inv_matrix(Cp,invCp)
         call inv_matrix(Cip,invCip)            ! invCip = (old C_i)^(-1)
         call mymulty(C_iso,invCip,multCCi)    ! multCCi = C_iso * (old C_i)^(-1)
         call dev(multCCi,devmultCCi)
-        call mymulty(mu*invC,devmultCCi,Stress2PK)   ! Stress2PK = trial 2nd PK
+        call mymulty(mu*invCp,devmultCCi,Stress2PK)   ! Stress2PK = trial 2nd PK
         
         
-        call mymulty(C,Stress2PK,MandellStress)  ! calligraphic F = driving force =  C T^tilde
+        call mymulty(Cp,Stress2PK,MandellStress)  ! calligraphic F = driving force =  C T^tilde
         
         call dev(MandellStress,DrivingForce_tmp_dev)    ! DrivingForce_tmp_dev = dev(C T^tilde)
         
@@ -89,7 +89,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,
         
         DrivingForce=sqrt((DrivingForce_tmp_sqr(1,1)+DrivingForce_tmp_sqr(2,2)+DrivingForce_tmp_sqr(3,3)))                             ! DrivingForce = sqrt(trace(  (  dev(C T^tilde)  )^2  ))
         
-        R=gamma/beta*(1.0d0-exp(-beta*sp))  ! trial isotropic hardening
+        R=gammar/betar*(1.0d0-exp(-betar*sp))  ! trial isotropic hardening
         li=(DrivingForce-sqrt(2.0d0/3.0d0)*(YieldStress+R))/eta
         
         if (li<0) then
@@ -117,7 +117,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,N,Couchy,Ci_new,PK1,YieldStress,
         call inv_matrix(Cip,invCip)            ! invCip = (new C_i)^(-1)
         call mymulty(C_iso,invCip,multCCi)    ! multCCi = C_iso * (new C_i)^(-1)
         call dev(multCCi,devmultCCi)
-        call mymulty(mu*invC,devmultCCi,Stress2PK)   ! Stress2PK = current 2nd PK
+        call mymulty(mu*invCp,devmultCCi,Stress2PK)   ! Stress2PK = current 2nd PK
         
     
         call mymulty(Stress2PK,trans_Fp,Couchy_tmp1)
