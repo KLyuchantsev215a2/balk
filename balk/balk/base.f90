@@ -155,11 +155,11 @@
         read (1, 1110) a,x(1,i),x(2,i)
     enddo
       
-    h=1.0d0*sqrt(m/rho_0)
+    h=1.0d0*sqrt(Area/N)
     vol=m/rho_0
     s=0.0d0;
     
-    dt=0.000001!CFL*h/(cs)
+    dt=CFL*h/(cs)
    fr=int(T/dt/50)
     
    v=0
@@ -234,9 +234,7 @@
    C(3,3,1:N)=1
    ! call plot_init(x,N,count_hole,count_section,index_section,index_hole)
     do step=1,int(T/dt)
-        x_0=x
-        v_0_0=v
-        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x_0,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,s,s_new,dt,etaN,C,C_new,PK1N)
+        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,s,s_new,dt,etaN,C,C_new,PK1N)
         v=v+dt*acc
         x=x+dt*v
         
@@ -281,9 +279,9 @@
              Poten=Poten+U(i)*vol
         enddo
         
-        write (2,1111) Ken,Poten,time_calculated
+        !write (2,1111) Ken,Poten,time_calculated
         
-       ! write (2,1112) (Force/(count_hole-2.0d0))*2.0d0,x(2,index_hole(1))-x_init(2,index_hole(1))
+        write (2,1112) (Force/(count_hole-2.0d0))*2.0d0,x(2,index_hole(1))-x_init(2,index_hole(1))
       
     enddo
     

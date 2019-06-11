@@ -2,8 +2,8 @@ subroutine Compute_potential(F,mu,k,N,U,Ci)
 ! input:  F = deformation gradient
 !         mu = shear modulus
 !          k = bulk modulus
+!       Ci=inelastic part Cauchy-Green
 !
-!   neo-Hookean material
 !  output: U potential energy
 
 real*8 :: F(2,2,N)
@@ -13,6 +13,8 @@ real*8 :: k
 real*8 :: mu
 
 real*8 :: J
+real*8 :: detA
+real*8 :: Aiso(3,3)
 real*8 :: B(3,3)
 real*8 :: Biso(3,3)
 real*8 :: Fp(3,3)
@@ -21,6 +23,7 @@ real*8 :: Cip_e(3,3)
 real*8 :: invCi_e(3,3)
 real*8 :: BinvC(3,3)
 
+U=0
 do i=1,N        
     Fp(1:2,1:2) = F(1:2,1:2,i)
     Fp(3,3) = 1.0d0
@@ -34,13 +37,17 @@ do i=1,N
     
     call trans(Fp,Ft)  !F'
     
-    call mymulty(F,Ft,B) !B=F*F'
+    call mymulty(Fp,Ft,B) !B=F*F'
     
     Biso = J**(-2.0d0/3.0d0)*B    !isochoric part of  right Cauchy–Green deformation tensor
     
-    call mymulty(Biso,invCi_e,BinvC)
+    call mymulty(Biso,invCi_e,BinvC)! C*Ci^(-1) A
     
-    U(i)=mu/2.0d0*(BinvC(1,1)+BinvC(2,2)+BinvC(3,3)-3)+k/50.0d0*(J**5+J**(-5)-2)
+    detA=BinvC(3,3)*(BinvC(1,1)*BinvC(2,2)-BinvC(1,2)*BinvC(1,2))
+    
+    Aiso = detA**(-2.0d0/3.0d0)*BinvC
+    
+    U(i)=mu/2.0d0*(Aiso(1,1)+Aiso(2,2)+Aiso(3,3)-3)+k/50.0d0*(J**(5.0d0)+J**(-5.0d0)-2) !mu/2*(trace(C_iso*Ci^(-1))+k/50*(J^5-J^(-5)-2)
 enddo
 
 end

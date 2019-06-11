@@ -42,8 +42,8 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
     call  OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar)
         Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
         s(1:N)=s_new(1:N)
-    call  Compute_Newton_Fluid(F,etaN,C,C_new,PK1N,N,dt)
-        C=C_new
+   ! call  Compute_Newton_Fluid(F,etaN,C,C_new,PK1N,N,dt)
+        C(1:N)=C_new(1:N)
         
     acc=0
     do i=1,N
