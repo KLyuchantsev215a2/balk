@@ -4,7 +4,7 @@
     integer sqn,fr,coutfr,flag
     real*8 :: rho_0, T, l,CFL!density, total calculation time ,the size of the side of the square, Courant number
     real*8 :: Area,m!body area, mass of a single particle , smoothing radius
-    real*8 :: nu,mu,cs,E,k,eta,damping,YieldStress,gammar,betar,etaN !material constants
+    real*8 :: nu,mu,cs,E,k,eta,damping,YieldStress,gammar,betar,gammas,betas,etaN !material constants
     real*8 :: dh,max_h!indent for calculating the derived kernel through finite differences
     real*8 :: dt,time_calculated!time step, time during calculation
     real*8 :: pi
@@ -15,6 +15,7 @@
   
     real*8, allocatable :: xplot(:,:,:)
     real*8, allocatable :: x_init(:,:)
+    real*8, allocatable :: x_prev(:,:)
     integer, allocatable :: table(:,:)
     real*8, allocatable :: v(:,:)
      real*8, allocatable :: s(:)
@@ -112,6 +113,10 @@
     k=175000.0d0
     gammar=30000.0d0
     betar=100.0d0
+    
+    gammas=-6000.0d0
+    betas=20.0d0
+    
     damping=0.0d0
     etaN=0.0d0
     eta=1.0
@@ -124,6 +129,7 @@
     
     allocate(x(2,N))
     allocate(x_init(2,N))
+    allocate(x_prev(2,N))
     allocate(xplot(2,N,200))
     allocate(v(2,N))
     allocate(table(N,120))
@@ -155,14 +161,14 @@
         read (1, 1110) a,x(1,i),x(2,i)
     enddo
       
-    h=1.0d0*sqrt(Area/N)
+    h=1.0d0*sqrt(m/rho_0)
     vol=m/rho_0
     s=0.0d0;
     
-    dt=CFL*h/(cs)
+    dt=0.000001!CFL*h/(cs)
    fr=int(T/dt/50)
     
-   v=0
+   
     
     call Create_Table(x,h,table,N,dh)
     
@@ -172,11 +178,11 @@
     do i=1,N
          
 
-    if(x(2,i)>=3.0d0-2*h) then
+    if(x(2,i)>=3.0d0) then
             count_hole=count_hole+1
         end if
         
-        if (x(2,i)<=0.0d0+2*h) then
+        if (x(2,i)<=0.0d0) then
                 count_section=count_section+1
         end if
         
@@ -189,20 +195,20 @@
     k2=1
     do i=1,N
         
-     if(x(2,i)>=3.0d0-2*h) then  
+     if(x(2,i)>=3.0d0) then  
                 index_hole(k1)=i
                 k1=k1+1
         end if
         
         
-        if (x(2,i)<=0.0d0+2*h) then
+        if (x(2,i)<=0.0d0) then
                 index_section(k2)=i                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
                 k2=k2+1
         end if
         
     enddo
     x_init=x
-    
+    v=0
    
    
    call Compute_nabla_W(x,h,vol,N,Wper1,nabla_W_0_1,nabla_W_0_2,dh,table)!tmp
@@ -223,8 +229,9 @@
    
    call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
    Ci=F
-   call OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar)
+   call OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar,gammas,betas)
    Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
+   PK1N=0
    
   call Compute_potential(F,mu,k,N,U,Ci)
    
@@ -234,7 +241,10 @@
    C(3,3,1:N)=1
    ! call plot_init(x,N,count_hole,count_section,index_section,index_hole)
     do step=1,int(T/dt)
-        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,s,s_new,dt,etaN,C,C_new,PK1N)
+        
+        x_prev=x;
+    
+        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,betas,gammas,s,s_new,dt,etaN,C,C_new,PK1N)
         v=v+dt*acc
         x=x+dt*v
         
@@ -247,41 +257,47 @@
        do k1=1,count_section
             x(2,index_section(k1))=x_init(2,index_section(k1))
         enddo
+        v=(x-x_prev)/dt
+        
+        Ken=0
+        Poten=0
+      !  call Compute_potential(F,mu,k,N,U,Ci)
+        
+       ! do i=1,N
+       !      Ken=Ken+1.0d0/2.0d0*rho_0*vol*(v(1,i)*v(1,i)+v(2,i)*v(2,i))
+       !      Poten=Poten+U(i)*vol
+      !  enddo
+        
         
         if(step-int(step/fr)*fr==0) then
              write (*,1112) Couchy(2,2,index_section(1)),time_calculated
     
            xplot(1:2,1:N,coutfr)=x
             coutfr=coutfr+1
+            
+           ! write (2,1111) Ken,Poten,time_calculated
+            
        end if
         
        Force=0.0d0
        
         do k1=1,count_hole 
-                if(x_init(2,index_hole(k1))<3.0d0) then 
+                if(x_init(2,index_hole(k1))==3.0d0) then 
                 
                     if((x_init(1,index_hole(k1))<=0.0000001)+(x_init(1,index_hole(k1))>=0.9999)) then
-                        Couchy(2,2,index_hole(k1))=Couchy(2,2,index_hole(k1))/2.0d0
+                        Couchy(2,2,index_hole(k1))=Couchy(2,2,index_hole(k1))!/2.0d0
                     endif
                     
                     Force=Force+Couchy(2,2,index_hole(k1))
                 endif
         enddo
         
-         call Compute_potential(F,mu,k,N,U,Ci)
+        
          
          
-        Ken=0
-        Poten=0
+      
         
-        do i=1,N
-             Ken=Ken+1.0d0/2.0d0*rho_0*vol*(v(1,i)*v(2,i))
-             Poten=Poten+U(i)*vol
-        enddo
-        
-        !write (2,1111) Ken,Poten,time_calculated
-        
-        write (2,1112) (Force/(count_hole-2.0d0))*2.0d0,x(2,index_hole(1))-x_init(2,index_hole(1))
+        write (2,1112) (Force/(count_hole)),x(2,index_hole(1))-x_init(2,index_hole(1))
       
     enddo
     

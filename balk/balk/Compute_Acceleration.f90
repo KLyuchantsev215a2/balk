@@ -1,4 +1,4 @@
-subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_init,v_old,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,s,s_new,dt,etaN,C,C_new,PK1N)
+subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_init,v_old,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,betas,gammas,s,s_new,dt,etaN,C,C_new,PK1N)
     integer :: N,i,j,alpha,k1,k2,count_hole,count_section
     
     real*8 :: cs
@@ -15,6 +15,8 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
     real*8 :: h
     real*8 :: betar
     real*8 :: gammar
+    real*8 :: betas
+    real*8 :: gammas
     real*8 :: s(N)
     real*8 :: s_new(N)
     real*8 :: F(2,2,N)
@@ -39,11 +41,11 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
     integer :: table(N,120)
 
     call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
-    call  OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar)
+    call  OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar,gammas,betas)
         Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
         s(1:N)=s_new(1:N)
    ! call  Compute_Newton_Fluid(F,etaN,C,C_new,PK1N,N,dt)
-        C(1:N)=C_new(1:N)
+   !    C=C_new
         
     acc=0
     do i=1,N
@@ -57,7 +59,7 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
         enddo
 
         do alpha=1,2
-            acc(alpha,i)=acc(alpha,i)-damping*v_old(alpha,i)
+       !     acc(alpha,i)=acc(alpha,i)-damping*v_old(alpha,i)
             acc(alpha,i)=acc(alpha,i)/rho_0
         enddo
     enddo

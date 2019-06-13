@@ -1,4 +1,4 @@
-subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar)
+subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar,gammas,betas)
     !input F,Ci, s              
     !output Ci_new,s_new,PK1
     integer:: N
@@ -17,6 +17,8 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
     real*8 :: R
     real*8 :: betar
     real*8 :: gammar
+    real*8 :: betas
+    real*8 :: gammas
     real*8 :: DrivingForce
     real*8 :: MandellStress(3,3)
     real*8 :: DrivingForce_tmp_dev(3,3)
@@ -90,7 +92,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
         
         DrivingForce=sqrt((DrivingForce_tmp_sqr(1,1)+DrivingForce_tmp_sqr(2,2)+DrivingForce_tmp_sqr(3,3)))                             ! DrivingForce = sqrt(trace(  (  dev(C T^tilde)  )^2  ))
         
-        R=gammar/betar*(1.0d0-exp(-betar*sp))  ! trial isotropic hardening
+        R=gammar/betar*(1.0d0-exp(-betar*sp))+gammas/betas*(1.0d0-exp(-betas*sp))  ! trial isotropic hardening
         li=(DrivingForce-sqrt(2.0d0/3.0d0)*(YieldStress+R))/eta
         
         if (li<0) then

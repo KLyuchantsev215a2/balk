@@ -51,11 +51,13 @@
 		<File RelativePath=".\1200.txt"/>
 		<File RelativePath=".\15552.txt"/>
 		<File RelativePath=".\19200.txt"/>
+		<File RelativePath=".\225.txt"/>
 		<File RelativePath=".\23232.txt"/>
 		<File RelativePath=".\300.txt"/>
 		<File RelativePath=".\32760.txt"/>
 		<File RelativePath=".\4800.txt"/>
-		<File RelativePath=".\75.txt"/></Filter>
+		<File RelativePath=".\75.txt"/>
+		<File RelativePath=".\900.txt"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<File RelativePath=".\base.f90"/>
 		<File RelativePath=".\Compute_Acceleration.f90"/>
