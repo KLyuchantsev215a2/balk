@@ -165,7 +165,7 @@
     vol=m/rho_0
     s=0.0d0;
     
-    dt=0.000001!CFL*h/(cs)
+    dt=0.000004!CFL*h/(cs)
    fr=int(T/dt/50)
     
    
@@ -261,12 +261,17 @@
         
         Ken=0
         Poten=0
-      !  call Compute_potential(F,mu,k,N,U,Ci)
+        call Compute_potential(F,mu,k,N,U,Ci)
         
-       ! do i=1,N
-       !      Ken=Ken+1.0d0/2.0d0*rho_0*vol*(v(1,i)*v(1,i)+v(2,i)*v(2,i))
-       !      Poten=Poten+U(i)*vol
-      !  enddo
+        do i=1,N
+             Ken=Ken+1.0d0/2.0d0*rho_0*vol*(v(1,i)*v(1,i)+v(2,i)*v(2,i))
+             Poten=Poten+U(i)*vol
+        enddo
+        
+        
+        
+    
+        
         
         
         if(step-int(step/fr)*fr==0) then
@@ -275,13 +280,9 @@
            xplot(1:2,1:N,coutfr)=x
             coutfr=coutfr+1
             
-           ! write (2,1111) Ken,Poten,time_calculated
-            
-       end if
-        
-       Force=0.0d0
+             Force=0.0d0
        
-        do k1=1,count_hole 
+             do k1=1,count_hole 
                 if(x_init(2,index_hole(k1))==3.0d0) then 
                 
                     if((x_init(1,index_hole(k1))<=0.0000001)+(x_init(1,index_hole(k1))>=0.9999)) then
@@ -290,14 +291,14 @@
                     
                     Force=Force+Couchy(2,2,index_hole(k1))
                 endif
-        enddo
+             enddo
         
+            write (2,1112) (Force/(count_hole)),x(2,index_hole(1))-x_init(2,index_hole(1))
+            !write (2,1111) Ken,Poten,time_calculated
+            
+       end if
         
-         
-         
       
-        
-        write (2,1112) (Force/(count_hole)),x(2,index_hole(1))-x_init(2,index_hole(1))
       
     enddo
     
