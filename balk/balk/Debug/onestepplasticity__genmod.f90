@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Sun Jun 16 21:44:43 2019
+        !COMPILER-GENERATED INTERFACE MODULE: Thu Jun 20 14:54:39 2019
         MODULE ONESTEPPLASTICITY__genmod
           INTERFACE 
             SUBROUTINE ONESTEPPLASTICITY(F,MU,K,ETA,DT,CI,S,S_NEW,N,    &
@@ -12,7 +12,7 @@
               REAL(KIND=8) :: CI(2,2,N)
               REAL(KIND=8) :: S(N)
               REAL(KIND=8) :: S_NEW(N)
-              REAL(KIND=8) :: COUCHY(2,2,N)
+              REAL(KIND=8) :: COUCHY(3,3,N)
               REAL(KIND=8) :: CI_NEW(3,3,N)
               REAL(KIND=8) :: PK1(2,2,N)
               REAL(KIND=8) :: YIELDSTRESS

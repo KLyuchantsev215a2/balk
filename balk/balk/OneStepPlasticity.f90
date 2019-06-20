@@ -1,9 +1,9 @@
 subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar,gammas,betas)
     !input F,Ci, s              
     !output Ci_new,s_new,PK1
-    integer:: N
+    integer:: N,i
     real*8 :: F(2,2,N)
-    real*8 :: Couchy(2,2,N)
+    real*8 :: Couchy(3,3,N)
     real*8 :: Ci(2,2,N)
     real*8 :: s(N)
     real*8 :: s_new(N)
@@ -35,6 +35,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
     real*8 ::Cp(3,3)
     real*8 ::invCp(3,3)
     real*8 ::Ci3x3(3,3)
+    real*8 :: error
     
     real*8 :: Cip(3,3)
     real*8 :: invCip(3,3)
@@ -47,14 +48,15 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
     real*8:: Couchy_tmp(3,3)
     real*8:: Couchy_tmp1(3,3)
     
-    Couchy=0
-    PK1=0
+
+    Couchy=0.0d0
+    PK1=0.0d0
     
     do i=1,N
-        Ci3x3=0
-        Cp=0
-        Couchy_tmp=0
-        Fp=0
+        Ci3x3=0.0d0
+        Cp=0.0d0
+        Couchy_tmp=0.0d0
+        Fp=0.0d0
         
   
         Fp(1:2,1:2)=F(1:2,1:2,i)
@@ -84,7 +86,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
         call mymulty(mu*invCp,devmultCCi,Stress2PK)   ! Stress2PK = trial 2nd PK
         
         
-        call mymulty(Cp,Stress2PK,MandellStress)  ! calligraphic F = driving force =  C T^tilde
+        call mymulty(Cp,Stress2PK,MandellStress)  ! MandellStress  =  C T^tilde
         
         call dev(MandellStress,DrivingForce_tmp_dev)    ! DrivingForce_tmp_dev = dev(C T^tilde)
         
@@ -93,6 +95,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
         DrivingForce=sqrt((DrivingForce_tmp_sqr(1,1)+DrivingForce_tmp_sqr(2,2)+DrivingForce_tmp_sqr(3,3)))                             ! DrivingForce = sqrt(trace(  (  dev(C T^tilde)  )^2  ))
         
         R=gammar/betar*(1.0d0-exp(-betar*sp))+gammas/betas*(1.0d0-exp(-betas*sp))  ! trial isotropic hardening
+
         li=(DrivingForce-sqrt(2.0d0/3.0d0)*(YieldStress+R))/eta
         
         if (li<0) then
@@ -103,18 +106,32 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
             Ci3x3 = Ci3x3
             s_new(i)=sp
         else
-        Ci3x3 = Ci3x3 + ((2.0*dt*mu*li)/DrivingForce)*C_iso
+        Ci3x3 = Ci3x3 + ((2.0d0*dt*mu*li)/DrivingForce)*C_iso
         s_new(i) = sp+ sqrt(2.0d0/3.0d0)*li*dt
         end if
+        
+        
+        Cp=0.0d0
+        Couchy_tmp=0.0d0
+        Fp=0.0d0
+        
+         Fp(1:2,1:2)=F(1:2,1:2,i)
+        
+        Fp(3,3)=1
+        
+        detFp=(Fp(1,1)*Fp(2,2)-Fp(1,2)*Fp(2,1))
+        
+        call trans(Fp,trans_Fp)
+          
+        call mymulty(trans_Fp,Fp,Cp)    ! now C = F' F
+        
+        
         
         detCi3x3=(Ci3x3(1,1)*Ci3x3(2,2)-Ci3x3(1,2)*Ci3x3(2,1))*Ci3x3(3,3)
         
         Ci3x3 = (detCi3x3**(-1.0/3.0))*Ci3x3   ! C_i for the current time step
         
-        Ci_new(1:2,1:2,i) = Ci3x3(1:2,1:2)
-        
-        Ci3x3(1:2,1:2)= Ci_new(1:2,1:2,i)     ! take new C_i
-        Ci3x3(3,3)=1.0/(Ci3x3(1,1)*Ci3x3(2,2)-Ci3x3(1,2)*Ci3x3(2,1))
+        Ci_new(1:3,1:3,i) = Ci3x3(1:3,1:3)
         
         Cip=Ci3x3;   ! C_i from the current time step at the current point
         call inv_matrix(Cip,invCip)            ! invCip = (new C_i)^(-1)
@@ -130,6 +147,7 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
             Couchy_tmp(alpha,alpha)=Couchy_tmp(alpha,alpha)+k/10.0*(detFp**5-detFp**(-5))
         enddo
         
+    
          call inv_matrix(Fp,invFp)
         
          do alpha=1,2
@@ -149,7 +167,12 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
          enddo
         enddo
     
-        Couchy(1:2,1:2,i)=Couchy_tmp(1:2,1:2)  
+        Couchy(1:3,1:3,i)=Couchy_tmp(1:3,1:3)  
     enddo
-return
+   !error= DrivingForce*sqrt(3.0d0/2.0d0)-  sqrt((( Couchy_tmp(1,1)- Couchy_tmp(2,2))**2+( Couchy_tmp(2,2)- Couchy_tmp(3,3))**2+( Couchy_tmp(3,3)- Couchy_tmp(1,1))**2+6.0d0*(Couchy_tmp(1,2)**2+Couchy_tmp(2,3)**2+Couchy_tmp(3,1)**2))/2.0d0)
+        
+       !  write (2,1112) error,Couchy_tmp(2,2)
+    1112 format (2f25.6)     
+    return
+
 end

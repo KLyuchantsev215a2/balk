@@ -6,7 +6,7 @@
     real*8 :: Area,m!body area, mass of a single particle , smoothing radius
     real*8 :: nu,mu,cs,E,k,eta,damping,YieldStress,gammar,betar,gammas,betas,etaN !material constants
     real*8 :: dh,max_h!indent for calculating the derived kernel through finite differences
-    real*8 :: dt,time_calculated!time step, time during calculation
+    real*8 :: dt,time_calculated,s_average!time step, time during calculation
     real*8 :: pi
     real*8 :: Force
     real*8 :: Ken,Poten
@@ -119,7 +119,7 @@
     
     damping=0.0d0
     etaN=0.0d0
-    eta=1.0
+    eta=100.0d0
     YieldStress=335.0d0
     E=9.0*k*mu/(3.0*k+mu)
 
@@ -163,9 +163,9 @@
       
     h=1.0d0*sqrt(m/rho_0)
     vol=m/rho_0
-    s=0.0d0;
+   
     
-    dt=0.000004!CFL*h/(cs)
+    dt=0.00001d0!CFL*h/(cs)
    fr=int(T/dt/50)
     
    
@@ -220,7 +220,7 @@
     allocate(C(3,3,N))
     allocate(C_new(3,3,N))
     allocate(Ci_new(3,3,N))
-    allocate(Couchy(2,2,N))
+    allocate(Couchy(3,3,N))
     allocate(PK1(2,2,N))
     allocate(PK1N(2,2,N))
     allocate(U(N))
@@ -229,44 +229,51 @@
    
    call Compute_F(vol,x,x_init,nabla_W_0_1,nabla_W_0_2,N,F,table)
    Ci=F
+   s=0.0d0
    call OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldStress,gammar,betar,gammas,betas)
    Ci(1:2,1:2,1:N)=Ci_new(1:2,1:2,1:N)
    PK1N=0
    
-  call Compute_potential(F,mu,k,N,U,Ci)
+  !call Compute_potential(F,mu,k,N,U,Ci)
    
-   C=0
+   C=0.0d0
    C(1,1,1:N)=1
    C(2,2,1:N)=1
    C(3,3,1:N)=1
+   acc=0.0d0
+   
    ! call plot_init(x,N,count_hole,count_section,index_section,index_hole)
     do step=1,int(T/dt)
         
-        x_prev=x;
-    
-        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,betas,gammas,s,s_new,dt,etaN,C,C_new,PK1N)
+        
         v=v+dt*acc
         x=x+dt*v
         
-        time_calculated=(real(step)*dt)
-        
         do k2=1,count_hole
-            x(2,index_hole(k2))=x_init(2,index_hole(k2))+0.05*4.0d0*(1-cos(pi*time_calculated))
+            x(2,index_hole(k2))=x_init(2,index_hole(k2))+0.05*16.0d0*(1-cos(pi*time_calculated))
         enddo  
         
-       do k1=1,count_section
+        do k1=1,count_section
             x(2,index_section(k1))=x_init(2,index_section(k1))
         enddo
-        v=(x-x_prev)/dt
         
-        Ken=0
-        Poten=0
-        call Compute_potential(F,mu,k,N,U,Ci)
         
-        do i=1,N
-             Ken=Ken+1.0d0/2.0d0*rho_0*vol*(v(1,i)*v(1,i)+v(2,i)*v(2,i))
-             Poten=Poten+U(i)*vol
-        enddo
+        call Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK1,x,x_init,v,nabla_W_0_1,nabla_W_0_2,acc,count_hole,count_section,index_section,index_hole,Ci,Ci_new,table,YieldStress,etta,betar,gammar,betas,gammas,s,s_new,dt,etaN,C,C_new,PK1N)
+        
+        
+        time_calculated=(real(step)*dt)
+        
+        
+        !v=(x-x_prev)/dt
+        
+    !    Ken=0
+       ! Poten=0
+       ! call Compute_potential(F,mu,k,N,U,Ci)
+        
+       ! do i=1,N
+       !      Ken=Ken+1.0d0/2.0d0*rho_0*vol*(v(1,i)*v(1,i)+v(2,i)*v(2,i))
+        !     Poten=Poten+U(i)*vol
+       ! enddo
         
         
         
@@ -282,18 +289,26 @@
             
              Force=0.0d0
        
+             !s_average=0.0d0
+            ! do i=1,N
+            ! s_average=s_average+sqrt((Couchy(1,1,i)-Couchy(2,2,i))**2+(Couchy(2,2,i)-Couchy(3,3,i))**2+(Couchy(3,3,i)-Couchy(1,1,i))**2)
+            ! enddo
+             
+           !  write (2,1112)  s_average/N,time_calculated
+             
              do k1=1,count_hole 
                 if(x_init(2,index_hole(k1))==3.0d0) then 
                 
                     if((x_init(1,index_hole(k1))<=0.0000001)+(x_init(1,index_hole(k1))>=0.9999)) then
-                        Couchy(2,2,index_hole(k1))=Couchy(2,2,index_hole(k1))!/2.0d0
+                        PK1(2,2,index_hole(k1))=PK1(2,2,index_hole(k1))/2.0d0
                     endif
                     
-                    Force=Force+Couchy(2,2,index_hole(k1))
+                    Force=Force+PK1(2,2,index_hole(k1))
+                    
                 endif
              enddo
         
-            write (2,1112) (Force/(count_hole)),x(2,index_hole(1))-x_init(2,index_hole(1))
+           write (2,1112)  (Force/(count_hole-1.0d0)),x(2,index_hole(1))-x_init(2,index_hole(1))
             !write (2,1111) Ken,Poten,time_calculated
             
        end if
@@ -337,7 +352,7 @@
  1113 format ("Density "1f12.6,/,"Time "1f10.6,/,"Poisson's ratio " 1f10.6,/,"Shear modulus " 1f15.6,/,"Side of a square " 1f10.6,/,"For finite difference " 1f10.6,/,"CFL " 1f10.6,/,"Particle count " 1i5)
  1110 format (1i12,1f24.0,1f21.0)
  1111 format (3f13.6)
- 1112 format (2f13.6)
+ 1112 format (2f25.6)
     
     end program base
     

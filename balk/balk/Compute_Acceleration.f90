@@ -25,7 +25,7 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
     real*8 :: C_new(3,3,N)
     
     real*8 :: Ci_new(3,3,N)
-    real*8 :: Couchy(2,2,N)
+    real*8 :: Couchy(3,3,N)
     real*8 :: PK1(2,2,N)
     real*8 :: PK1N(2,2,N)
     real*8 :: x(2,N)
@@ -35,7 +35,6 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
     real*8 :: nabla_W_0_2(N,N)
  
     real*8 :: acc(2,N)
-     real*8 :: Pi_ij
     integer :: index_section(count_section)
     integer :: index_hole(count_hole)
     integer :: table(N,120)
@@ -47,7 +46,7 @@ subroutine Compute_Acceleration(cs,N,h,dh,rho_0,mu,k,eta,damping,vol,F,Couchy,PK
    ! call  Compute_Newton_Fluid(F,etaN,C,C_new,PK1N,N,dt)
    !    C=C_new
         
-    acc=0
+    acc=0.0d0
     do i=1,N
         do j=1,table(i,1)
        

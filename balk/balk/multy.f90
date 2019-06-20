@@ -3,7 +3,7 @@ subroutine mymulty (M,M1,multyMM1)
         real*8 :: M(3,3)
         real*8 :: M1(3,3)
         real*8 :: multyMM1(3,3)
-        multyMM1=0
+        multyMM1=0.0d0
          do alpha=1,3
             do beta=1,3
                 multyMM1(alpha,beta)=0
