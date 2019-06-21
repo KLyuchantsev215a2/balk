@@ -168,10 +168,12 @@ subroutine OneStepPlasticity(F,mu,k,eta,dt,Ci,s,s_new,N,Couchy,Ci_new,PK1,YieldS
         enddo
     
         Couchy(1:3,1:3,i)=Couchy_tmp(1:3,1:3)  
-    enddo
-   !error= DrivingForce*sqrt(3.0d0/2.0d0)-  sqrt((( Couchy_tmp(1,1)- Couchy_tmp(2,2))**2+( Couchy_tmp(2,2)- Couchy_tmp(3,3))**2+( Couchy_tmp(3,3)- Couchy_tmp(1,1))**2+6.0d0*(Couchy_tmp(1,2)**2+Couchy_tmp(2,3)**2+Couchy_tmp(3,1)**2))/2.0d0)
-        
-       !  write (2,1112) error,Couchy_tmp(2,2)
+          if (i==156) then
+            error= DrivingForce*sqrt(3.0d0/2.0d0)-  sqrt((( Couchy_tmp(1,1)- Couchy_tmp(2,2))**2+( Couchy_tmp(2,2)- Couchy_tmp(3,3))**2+( Couchy_tmp(3,3)- Couchy_tmp(1,1))**2+6.0d0*(Couchy_tmp(1,2)**2+Couchy_tmp(2,3)**2+Couchy_tmp(3,1)**2))/2.0d0)
+            write (2,1112) error,Couchy_tmp(2,2)
+        endif
+    enddo 
+  
     1112 format (2f25.6)     
     return
 

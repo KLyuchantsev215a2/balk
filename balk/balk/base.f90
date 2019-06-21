@@ -94,7 +94,7 @@
       
      end interface
     
-    open (unit=1, file="1200.txt")
+    open (unit=1, file="300.txt")
     open (unit=2, file="output_x.txt", action='write')
     open (unit=3, file="output_C.txt", action='write')
     
@@ -308,7 +308,7 @@
                 endif
              enddo
         
-           write (2,1112)  (Force/(count_hole-1.0d0)),x(2,index_hole(1))-x_init(2,index_hole(1))
+          ! write (2,1112)  (Force/(count_hole-1.0d0)),x(2,index_hole(1))-x_init(2,index_hole(1))
             !write (2,1111) Ken,Poten,time_calculated
             
        end if
